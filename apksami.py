@@ -2,13 +2,14 @@ import streamlit as st
 from datetime import datetime
 
 # CONFIGURACIÓN DE LA PÁGINA PARA CELULARES
-st.set_page_config(page_title="Agenda de Cobro V3", page_icon="📅", layout="centered")
+st.set_page_config(page_title="Agenda de Cobro V4", page_icon="📅", layout="centered")
 
 # 1. INICIALIZAR LA BASE DE DATOS EN LA MEMORIA DE LA APP
 if "clientes" not in st.session_state:
     st.session_state.clientes = [
         {"nombre": "Carlos Mendoza", "dia_pago": 8, "reagendado": None, "ya_pago": False},
-        {"nombre": "Ana Gómez", "dia_pago": 15, "reagendado": None, "ya_pago": False}
+        {"nombre": "Ana Gómez", "dia_pago": 15, "reagendado": None, "ya_pago": False},
+        {"nombre": "Carlos Pérez", "dia_pago": 20, "reagendado": None, "ya_pago": False}
     ]
 
 # 2. MOTOR DE LOGÍSICA DEL SEMÁFORO
@@ -33,88 +34,89 @@ def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
         return "oculto", "Fuera de rango"
 
 # --- INTERFAZ VISUAL ---
-st.title("📅 Agenda Semáforo V3")
+st.title("📅 Agenda Semáforo Inteligente")
 
-# SIMULADOR DE DÍA (Para hacer pruebas en ruta)
+# SIMULADOR DE DÍA
 dia_actual = st.slider("Simular Día de Hoy del Mes:", min_value=1, max_value=31, value=datetime.now().day)
 
-# 3. SECCIÓN SE BUSCADOR Y REGISTRO DINÁMICO
-with st.expander("🔍 Buscar o Agregar Cliente", expanded=False):
-    nuevo_nombre = st.text_input("Escribe el nombre del cliente:")
+# =========================================================
+# 3. SECCIÓN DE BÚSQUEDA Y REGISTRO DINÁMICO
+# =========================================================
+st.subheader("🔍 Buscar o Registrar Cliente")
+nombre_buscar = st.text_input("Escribe el nombre del cliente:", placeholder="Empieza a escribir...")
+
+existe_exacto = False
+
+if nombre_buscar.strip():
+    texto_limpio = nombre_buscar.strip().lower()
     
-    existe_exacto = False
+    # Filtrar coincidencias de toda la lista (estén ocultos o no)
+    coincidencias = [(idx, c) for idx, c in enumerate(st.session_state.clientes) if texto_limpio in c["nombre"].lower()]
     
-    # Si el usuario empieza a escribir, el buscador se activa en tiempo real
-    if nuevo_nombre.strip():
-        nombre_buscado = nuevo_nombre.strip().lower()
-        # Buscamos coincidencias en la base de datos actual
-        coincidencias = [(idx, c) for idx, c in enumerate(st.session_state.clientes) if nombre_buscado in c["nombre"].lower()]
-        
-        if coincidencias:
-            st.write("### 📂 Contactos detectados en el sistema:")
-            for idx, registro in coincidencias:
-                if registro["nombre"].lower() == nombre_buscado:
-                    existe_exacto = True
+    if coincidencias:
+        st.write(f"📂 **Coincidencias encontradas (Mostrando hasta 5):**")
+        # Limitamos a un máximo de 5 como me pediste
+        for idx, registro in coincidencias[:5]:
+            if registro["nombre"].lower() == texto_limpio:
+                existe_exacto = True
                 
-                # Calculamos su estado aunque esté oculto en la pantalla principal
-                color_b, texto_b = obtener_color_y_estado(
-                    dia_actual, registro["dia_pago"], registro["reagendado"], registro["ya_pago"]
-                )
+            # Calculamos su estado actual para mostrarlo en la tarjeta de búsqueda
+            color_s, texto_s = obtener_color_y_estado(dia_actual, registro["dia_pago"], registro["reagendado"], registro["ya_pago"])
+            if registro["ya_pago"]:
+                texto_s = "✅ Ya pagó este mes"
+            elif color_s == "oculto":
+                texto_s = f"💤 Fuera de semáforo (Pago: Día {registro['dia_pago']})"
                 
-                info_estado = texto_b if color_b != "oculto" else "🚫 Oculto (Fuera de rango o ya pagó)"
+            # Tarjeta idéntica a la del semáforo principal
+            titulo_tarjeta = f"{texto_s} | {registro['nombre']}"
+            if registro['reagendado'] is not None:
+                titulo_tarjeta += f" (Reagendado -> {registro['reagendado']})"
                 
-                # Desplegamos la tarjeta del cliente encontrado dentro del buscador
-                st.warning(f"**{registro['nombre']}** | Estado: {info_estado} | Día fijo: {registro['dia_pago']}")
-                
-                # Botones de acción directa para solucionar el problema rápido
+            with st.expander(titulo_tarjeta, expanded=True):
+                st.write(f"**Configuración:** Día de pago fijo: {registro['dia_pago']}")
                 c1, c2, c3 = st.columns(3)
                 with c1:
-                    if st.button("✅ Ya pagó", key=f"b_pago_{idx}"):
+                    if st.button("✅ Ya pagó", key=f"busq_pago_{idx}"):
                         st.session_state.clientes[idx]["ya_pago"] = True
-                        st.success("Marcado como pagado.")
                         st.rerun()
                 with c2:
-                    nueva_fecha_b = st.number_input(
-                        "Traer a fecha:", min_value=1, max_value=31, value=dia_actual, key=f"b_in_{idx}"
-                    )
-                    if st.button("📅 Agendar Hoy", key=f"b_reag_{idx}"):
-                        # Lo movemos a la fecha deseada y nos aseguramos de activar su estatus por si ya había pagado
-                        st.session_state.clientes[idx]["reagendado"] = int(nueva_fecha_b)
-                        st.session_state.clientes[idx]["ya_pago"] = False 
-                        st.success(f"¡Reagendado para el día {nueva_fecha_b}! Ya aparecerá en el semáforo.")
+                    fecha_b = st.number_input("Día:", min_value=1, max_value=31, value=dia_actual, key=f"busq_num_{idx}")
+                    if st.button("📅 Agendar", key=f"busq_reag_{idx}"):
+                        st.session_state.clientes[idx]["reagendado"] = int(fecha_b)
+                        st.session_state.clientes[idx]["ya_pago"] = False  # Por si ya había pagado y lo quieres reactivar
                         st.rerun()
                 with c3:
-                    if st.button("❌ Eliminar Duplicado", key=f"b_elim_{idx}"):
+                    if st.button("❌ Eliminar", key=f"busq_elim_{idx}"):
                         st.session_state.clientes.pop(idx)
-                        st.error("Cliente eliminado de la lista.")
                         st.rerun()
-            st.write("---")
+    else:
+        st.info("💡 No hay ningún cliente con ese nombre.")
 
-    # Formulario para registrar un cliente verdaderamente nuevo
-    with st.form("guardar_cliente_form", clear_on_submit=True):
-        st.write("**¿Es un cliente nuevo? asígnalo aquí:**")
-        nuevo_dia = st.number_input("Día de Pago Fijo (1-31):", min_value=1, max_value=31, value=1)
-        boton_guardar = st.form_submit_button("Guardar Nuevo Cliente")
-        
-        if boton_guardar and nuevo_nombre:
-            nombre_limpio = nuevo_nombre.strip()
-            if existe_exacto:
-                st.error(f"❌ El cliente '{nombre_limpio}' ya existe en tu lista. Usa los botones amarillos de arriba para gestionarlo, no lo dupliques.")
-            else:
-                nuevo_cliente = {
-                    "nombre": nombre_limpio,
+    # Sección automática para agregar si no hay coincidencia exacta
+    if not existe_exacto:
+        st.write("---")
+        st.write(f"➕ **Registrar como nuevo cliente:** '{nombre_buscar.strip()}'")
+        col_dia, col_btn = st.columns([2, 1])
+        with col_dia:
+            nuevo_dia = st.number_input("Asignar Día de Pago Fijo (1-31):", min_value=1, max_value=31, value=1, key="nuevo_dia_pago")
+        with col_btn:
+            st.write(" ") # Espacio estético
+            if st.button("➕ Guardar", use_container_width=True):
+                st.session_state.clientes.append({
+                    "nombre": nombre_buscar.strip(),
                     "dia_pago": int(nuevo_dia),
                     "reagendado": None,
                     "ya_pago": False
-                }
-                st.session_state.clientes.append(nuevo_cliente)
-                st.success(f"¡{nombre_limpio} agregado a la lista con éxito!")
+                })
+                st.success("¡Agregado!")
                 st.rerun()
 
 st.write("---")
 
-# 4. DESPLIEGUE DEL SEMÁFORO DE CLIENTES (PANTALLA PRINCIPAL EN RUTA)
-st.subheader("Clientes Activos en Ruta")
+# =========================================================
+# 4. DESPLIEGUE DEL SEMÁFORO PRINCIPAL (RUTA DEL DÍA)
+# =========================================================
+st.subheader("📌 Clientes Activos en el Semáforo")
 
 hay_clientes_visibles = False
 
@@ -141,9 +143,8 @@ for i, registro in enumerate(st.session_state.clientes):
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("✅ Ya pagó", key=f"pago_{registro['nombre']}_{i}"):
+            if st.button("✅ Ya pagó", key=f"ruta_pago_{i}"):
                 registro["ya_pago"] = True
-                st.success("Marcado como pagado.")
                 st.rerun()
                 
         with col2:
@@ -152,22 +153,21 @@ for i, registro in enumerate(st.session_state.clientes):
                 min_value=1, 
                 max_value=31, 
                 value=dia_actual, 
-                key=f"input_{registro['nombre']}_{i}"
+                key=f"ruta_num_{i}"
             )
-            if st.button("📅 Reagendar", key=f"reagendar_{registro['nombre']}_{i}"):
+            if st.button("📅 Reagendar", key=f"ruta_reag_{i}"):
                 registro["reagendado"] = int(nueva_fecha)
-                st.info(f"Reagendado para el {nueva_fecha}")
                 st.rerun()
                 
         with col3:
-            if st.button("❌ Eliminar", key=f"eliminar_{registro['nombre']}_{i}"):
+            if st.button("❌ Eliminar", key=f"ruta_elim_{i}"):
                 st.session_state.clientes.pop(i)
-                st.error(f"Cliente eliminado.")
                 st.rerun()
 
 if not hay_clientes_visibles:
     st.info("No hay clientes programados para cobro en el día simulado de hoy.")
 
+st.write("---")
 # Botón de reinicio mensual
 if st.button("🔄 Reiniciar Mes (Borra pagos y agendas temporales)"):
     for registro in st.session_state.clientes:
