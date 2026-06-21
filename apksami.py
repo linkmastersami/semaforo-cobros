@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 
 # CONFIGURACIÓN DE LA PÁGINA PARA CELULARES
-st.set_page_config(page_title="Agenda de Cobro V2", page_icon="📅", layout="centered")
+st.set_page_config(page_title="Agenda de Cobro V3", page_icon="📅", layout="centered")
 
 # 1. INICIALIZAR LA BASE DE DATOS EN LA MEMORIA DE LA APP
 if "clientes" not in st.session_state:
@@ -33,32 +33,73 @@ def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
         return "oculto", "Fuera de rango"
 
 # --- INTERFAZ VISUAL ---
-st.title("📅 Agenda Semáforo V2")
+st.title("📅 Agenda Semáforo V3")
 
-# SIMULADOR DE DÍA (Para hacer pruebas)
+# SIMULADOR DE DÍA (Para hacer pruebas en ruta)
 dia_actual = st.slider("Simular Día de Hoy del Mes:", min_value=1, max_value=31, value=datetime.now().day)
 
-# 3. FORMULARIO PARA AGREGAR NUEVOS CLIENTES (CON DETECTOR DE DUPLICADOS)
-with st.expander("➕ Agregar Nuevo Cliente", expanded=False):
-    with st.form("nuevo_cliente_form", clear_on_submit=True):
-        nuevo_nombre = st.text_input("Nombre del Cliente:")
+# 3. SECCIÓN SE BUSCADOR Y REGISTRO DINÁMICO
+with st.expander("🔍 Buscar o Agregar Cliente", expanded=False):
+    nuevo_nombre = st.text_input("Escribe el nombre del cliente:")
+    
+    existe_exacto = False
+    
+    # Si el usuario empieza a escribir, el buscador se activa en tiempo real
+    if nuevo_nombre.strip():
+        nombre_buscado = nuevo_nombre.strip().lower()
+        # Buscamos coincidencias en la base de datos actual
+        coincidencias = [(idx, c) for idx, c in enumerate(st.session_state.clientes) if nombre_buscado in c["nombre"].lower()]
         
-        # Alerta en tiempo real mientras el usuario escribe
-        if nuevo_nombre.strip():
-            coincidencias = [c["nombre"] for c in st.session_state.clientes if nuevo_nombre.lower().strip() in c["nombre"].lower()]
-            if coincidencias:
-                st.warning(f"⚠️ Posibles duplicados: {', '.join(coincidencias)}")
+        if coincidencias:
+            st.write("### 📂 Contactos detectados en el sistema:")
+            for idx, registro in coincidencias:
+                if registro["nombre"].lower() == nombre_buscado:
+                    existe_exacto = True
                 
+                # Calculamos su estado aunque esté oculto en la pantalla principal
+                color_b, texto_b = obtener_color_y_estado(
+                    dia_actual, registro["dia_pago"], registro["reagendado"], registro["ya_pago"]
+                )
+                
+                info_estado = texto_b if color_b != "oculto" else "🚫 Oculto (Fuera de rango o ya pagó)"
+                
+                # Desplegamos la tarjeta del cliente encontrado dentro del buscador
+                st.warning(f"**{registro['nombre']}** | Estado: {info_estado} | Día fijo: {registro['dia_pago']}")
+                
+                # Botones de acción directa para solucionar el problema rápido
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    if st.button("✅ Ya pagó", key=f"b_pago_{idx}"):
+                        st.session_state.clientes[idx]["ya_pago"] = True
+                        st.success("Marcado como pagado.")
+                        st.rerun()
+                with c2:
+                    nueva_fecha_b = st.number_input(
+                        "Traer a fecha:", min_value=1, max_value=31, value=dia_actual, key=f"b_in_{idx}"
+                    )
+                    if st.button("📅 Agendar Hoy", key=f"b_reag_{idx}"):
+                        # Lo movemos a la fecha deseada y nos aseguramos de activar su estatus por si ya había pagado
+                        st.session_state.clientes[idx]["reagendado"] = int(nueva_fecha_b)
+                        st.session_state.clientes[idx]["ya_pago"] = False 
+                        st.success(f"¡Reagendado para el día {nueva_fecha_b}! Ya aparecerá en el semáforo.")
+                        st.rerun()
+                with c3:
+                    if st.button("❌ Eliminar Duplicado", key=f"b_elim_{idx}"):
+                        st.session_state.clientes.pop(idx)
+                        st.error("Cliente eliminado de la lista.")
+                        st.rerun()
+            st.write("---")
+
+    # Formulario para registrar un cliente verdaderamente nuevo
+    with st.form("guardar_cliente_form", clear_on_submit=True):
+        st.write("**¿Es un cliente nuevo? asígnalo aquí:**")
         nuevo_dia = st.number_input("Día de Pago Fijo (1-31):", min_value=1, max_value=31, value=1)
-        boton_guardar = st.form_submit_button("Guardar Cliente")
+        boton_guardar = st.form_submit_button("Guardar Nuevo Cliente")
         
         if boton_guardar and nuevo_nombre:
             nombre_limpio = nuevo_nombre.strip()
-            # Validación estricta para no duplicar exactamente el mismo nombre
-            existe_exacto = any(c["nombre"].lower() == nombre_limpio.lower() for c in st.session_state.clientes)
-            
             if existe_exacto:
-                st.error(f"❌ El cliente '{nombre_limpio}' ya existe en la lista. No se agregó de nuevo.")
+                st.error(f"❌ El cliente '{nombre_limpio}' ya existe en tu lista. Usa los botones amarillos de arriba para gestionarlo, no lo dupliques.")
             else:
                 nuevo_cliente = {
                     "nombre": nombre_limpio,
@@ -67,17 +108,16 @@ with st.expander("➕ Agregar Nuevo Cliente", expanded=False):
                     "ya_pago": False
                 }
                 st.session_state.clientes.append(nuevo_cliente)
-                st.success(f"¡{nombre_limpio} agregado con éxito!")
+                st.success(f"¡{nombre_limpio} agregado a la lista con éxito!")
                 st.rerun()
 
 st.write("---")
 
-# 4. DESPLIEGUE DEL SEMÁFORO DE CLIENTES
+# 4. DESPLIEGUE DEL SEMÁFORO DE CLIENTES (PANTALLA PRINCIPAL EN RUTA)
 st.subheader("Clientes Activos en Ruta")
 
 hay_clientes_visibles = False
 
-# Recorremos la lista usando el índice para poder eliminar correctamente
 for i, registro in enumerate(st.session_state.clientes):
     color, texto_estado = obtener_color_y_estado(
         dia_actual, 
@@ -98,7 +138,6 @@ for i, registro in enumerate(st.session_state.clientes):
     with st.expander(etiqueta_tarjeta):
         st.write(f"**Día de cobro original:** Día {registro['dia_pago']} de cada mes.")
         
-        # Agregamos tres columnas para los botones de acción rápidos en el celular
         col1, col2, col3 = st.columns(3)
         
         with col1:
@@ -121,7 +160,6 @@ for i, registro in enumerate(st.session_state.clientes):
                 st.rerun()
                 
         with col3:
-            # NUEVO BOTÓN PARA ELIMINAR EL CLIENTE DEFINITIVAMENTE
             if st.button("❌ Eliminar", key=f"eliminar_{registro['nombre']}_{i}"):
                 st.session_state.clientes.pop(i)
                 st.error(f"Cliente eliminado.")
@@ -130,7 +168,7 @@ for i, registro in enumerate(st.session_state.clientes):
 if not hay_clientes_visibles:
     st.info("No hay clientes programados para cobro en el día simulado de hoy.")
 
-# Botón al final de la pantalla para reiniciar el mes
+# Botón de reinicio mensual
 if st.button("🔄 Reiniciar Mes (Borra pagos y agendas temporales)"):
     for registro in st.session_state.clientes:
         registro["ya_pago"] = False
