@@ -1,16 +1,35 @@
 import streamlit as st
 from datetime import datetime
+import json
+import os
 
 # CONFIGURACIÓN DE LA PÁGINA PARA CELULARES
-st.set_page_config(page_title="Agenda de Cobro V4", page_icon="📅", layout="centered")
+st.set_page_config(page_title="Agenda de Cobro V5", page_icon="📅", layout="centered")
 
-# 1. INICIALIZAR LA BASE DE DATOS EN LA MEMORIA DE LA APP
-if "clientes" not in st.session_state:
-    st.session_state.clientes = [
+ARCHIVO_DATOS = "clientes.json"
+
+# --- FUNCIONES PARA LEER Y GUARDAR EN EL ARCHIVO ---
+def cargar_clientes():
+    # Si el archivo ya existe, lee los clientes guardados
+    if os.path.exists(ARCHIVO_DATOS):
+        try:
+            with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            pass
+    # Si no existe, regresa estos ejemplos por defecto
+    return [
         {"nombre": "Carlos Mendoza", "dia_pago": 8, "reagendado": None, "ya_pago": False},
-        {"nombre": "Ana Gómez", "dia_pago": 15, "reagendado": None, "ya_pago": False},
-        {"nombre": "Carlos Pérez", "dia_pago": 20, "reagendado": None, "ya_pago": False}
+        {"nombre": "Ana Gómez", "dia_pago": 15, "reagendado": None, "ya_pago": False}
     ]
+
+def guardar_clientes():
+    with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.clientes, f, ensure_ascii=False, indent=4)
+
+# 1. CARGAR DATOS A LA MEMORIA DE STREAMLIT
+if "clientes" not in st.session_state:
+    st.session_state.clientes = cargar_clientes()
 
 # 2. MOTOR DE LOGÍSICA DEL SEMÁFORO
 def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
@@ -34,7 +53,7 @@ def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
         return "oculto", "Fuera de rango"
 
 # --- INTERFAZ VISUAL ---
-st.title("📅 Agenda Semáforo Inteligente")
+st.title("📅 Agenda Semáforo Permanente")
 
 # SIMULADOR DE DÍA
 dia_actual = st.slider("Simular Día de Hoy del Mes:", min_value=1, max_value=31, value=datetime.now().day)
@@ -49,25 +68,20 @@ existe_exacto = False
 
 if nombre_buscar.strip():
     texto_limpio = nombre_buscar.strip().lower()
-    
-    # Filtrar coincidencias de toda la lista (estén ocultos o no)
     coincidencias = [(idx, c) for idx, c in enumerate(st.session_state.clientes) if texto_limpio in c["nombre"].lower()]
     
     if coincidencias:
         st.write(f"📂 **Coincidencias encontradas (Mostrando hasta 5):**")
-        # Limitamos a un máximo de 5 como me pediste
         for idx, registro in coincidencias[:5]:
             if registro["nombre"].lower() == texto_limpio:
                 existe_exacto = True
                 
-            # Calculamos su estado actual para mostrarlo en la tarjeta de búsqueda
             color_s, texto_s = obtener_color_y_estado(dia_actual, registro["dia_pago"], registro["reagendado"], registro["ya_pago"])
             if registro["ya_pago"]:
                 texto_s = "✅ Ya pagó este mes"
             elif color_s == "oculto":
                 texto_s = f"💤 Fuera de semáforo (Pago: Día {registro['dia_pago']})"
                 
-            # Tarjeta idéntica a la del semáforo principal
             titulo_tarjeta = f"{texto_s} | {registro['nombre']}"
             if registro['reagendado'] is not None:
                 titulo_tarjeta += f" (Reagendado -> {registro['reagendado']})"
@@ -78,21 +92,23 @@ if nombre_buscar.strip():
                 with c1:
                     if st.button("✅ Ya pagó", key=f"busq_pago_{idx}"):
                         st.session_state.clientes[idx]["ya_pago"] = True
+                        guardar_clientes() # Guardar cambio de forma permanente
                         st.rerun()
                 with c2:
                     fecha_b = st.number_input("Día:", min_value=1, max_value=31, value=dia_actual, key=f"busq_num_{idx}")
                     if st.button("📅 Agendar", key=f"busq_reag_{idx}"):
                         st.session_state.clientes[idx]["reagendado"] = int(fecha_b)
-                        st.session_state.clientes[idx]["ya_pago"] = False  # Por si ya había pagado y lo quieres reactivar
+                        st.session_state.clientes[idx]["ya_pago"] = False
+                        guardar_clientes() # Guardar cambio de forma permanente
                         st.rerun()
                 with c3:
                     if st.button("❌ Eliminar", key=f"busq_elim_{idx}"):
                         st.session_state.clientes.pop(idx)
+                        guardar_clientes() # Guardar cambio de forma permanente
                         st.rerun()
     else:
         st.info("💡 No hay ningún cliente con ese nombre.")
 
-    # Sección automática para agregar si no hay coincidencia exacta
     if not existe_exacto:
         st.write("---")
         st.write(f"➕ **Registrar como nuevo cliente:** '{nombre_buscar.strip()}'")
@@ -100,7 +116,7 @@ if nombre_buscar.strip():
         with col_dia:
             nuevo_dia = st.number_input("Asignar Día de Pago Fijo (1-31):", min_value=1, max_value=31, value=1, key="nuevo_dia_pago")
         with col_btn:
-            st.write(" ") # Espacio estético
+            st.write(" ")
             if st.button("➕ Guardar", use_container_width=True):
                 st.session_state.clientes.append({
                     "nombre": nombre_buscar.strip(),
@@ -108,6 +124,7 @@ if nombre_buscar.strip():
                     "reagendado": None,
                     "ya_pago": False
                 })
+                guardar_clientes() # Guardar nuevo cliente de forma permanente
                 st.success("¡Agregado!")
                 st.rerun()
 
@@ -121,57 +138,80 @@ st.subheader("📌 Clientes Activos en el Semáforo")
 hay_clientes_visibles = False
 
 for i, registro in enumerate(st.session_state.clientes):
-    color, texto_estado = obtener_color_y_estado(
-        dia_actual, 
-        registro["dia_pago"], 
-        registro["reagendado"], 
-        registro["ya_pago"]
-    )
+    color, texto_estado = obtener_color_y_estado(dia_actual, registro["dia_pago"], registro["reagendado"], registro["ya_pago"])
     
     if color == "oculto":
         continue
         
     hay_clientes_visibles = True
-    
     etiqueta_tarjeta = f"{texto_estado} | {registro['nombre']}"
     if registro['reagendado'] is not None:
         etiqueta_tarjeta += f" (Reagendado para el {registro['reagendado']})"
         
     with st.expander(etiqueta_tarjeta):
         st.write(f"**Día de cobro original:** Día {registro['dia_pago']} de cada mes.")
-        
         col1, col2, col3 = st.columns(3)
         
         with col1:
             if st.button("✅ Ya pagó", key=f"ruta_pago_{i}"):
                 registro["ya_pago"] = True
+                guardar_clientes()
                 st.rerun()
                 
         with col2:
-            nueva_fecha = st.number_input(
-                "Día:", 
-                min_value=1, 
-                max_value=31, 
-                value=dia_actual, 
-                key=f"ruta_num_{i}"
-            )
+            nueva_fecha = st.number_input("Día:", min_value=1, max_value=31, value=dia_actual, key=f"ruta_num_{i}")
             if st.button("📅 Reagendar", key=f"ruta_reag_{i}"):
                 registro["reagendado"] = int(nueva_fecha)
+                guardar_clientes()
                 st.rerun()
                 
         with col3:
             if st.button("❌ Eliminar", key=f"ruta_elim_{i}"):
                 st.session_state.clientes.pop(i)
+                guardar_clientes()
                 st.rerun()
 
 if not hay_clientes_visibles:
     st.info("No hay clientes programados para cobro en el día simulado de hoy.")
 
 st.write("---")
-# Botón de reinicio mensual
+
+# =========================================================
+# 5. HERRAMIENTAS DE RESPALDO Y REINICIO
+# =========================================================
+with st.expander("💾 Respaldos (Asegurar datos en tu Teléfono)"):
+    st.write("Usa estas opciones para no perder tu lista si el servidor se reinicia:")
+    
+    # Botón para descargar los datos actuales como archivo JSON al celular
+    datos_json = json.dumps(st.session_state.clientes, ensure_ascii=False, indent=4)
+    st.download_button(
+        label="📥 Descargar copia de clientes al celular",
+        data=datos_json,
+        file_name="respaldo_clientes.json",
+        mime="application/json",
+        use_container_width=True
+    )
+    
+    st.write("---")
+    # Subir archivo para restaurar la lista
+    archivo_subido = st.file_uploader("📤 Restaurar lista desde un respaldo:", type=["json"])
+    if archivo_subido is not None:
+        try:
+            datos_restaurados = json.load(archivo_subido)
+            if st.button("⚠️ Confirmar Restauración"):
+                st.session_state.clientes = datos_restaurados
+                guardar_clientes()
+                st.success("¡Lista restaurada con éxito!")
+                st.rerun()
+        except:
+            st.error("Archivo no válido.")
+
+st.write(" ")
 if st.button("🔄 Reiniciar Mes (Borra pagos y agendas temporales)"):
     for registro in st.session_state.clientes:
         registro["ya_pago"] = False
         registro["reagendado"] = None
+    guardar_clientes()
     st.success("¡Todo listo para el nuevo ciclo mensual!")
     st.rerun()
+ 
