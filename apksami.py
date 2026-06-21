@@ -4,30 +4,67 @@ import json
 import os
 
 # CONFIGURACIÓN DE LA PÁGINA PARA CELULARES
-st.set_page_config(page_title="Agenda de Cobro V5", page_icon="📅", layout="centered")
+st.set_page_config(page_title="Agenda de Cobro Oficial", page_icon="📅", layout="centered")
 
 ARCHIVO_DATOS = "clientes.json"
 
 # --- FUNCIONES PARA LEER Y GUARDAR EN EL ARCHIVO ---
 def cargar_clientes():
-    # Si el archivo ya existe, lee los clientes guardados
     if os.path.exists(ARCHIVO_DATOS):
         try:
             with open(ARCHIVO_DATOS, "r", encoding="utf-8") as f:
                 return json.load(f)
         except:
             pass
-    # Si no existe, regresa estos ejemplos por defecto
+    # LISTA OFICIAL EXTRAÍDA DE TUS HOJAS DE RUTA (SIN DUPLICADOS NI BLANCOS)
     return [
-        {"nombre": "Carlos Mendoza", "dia_pago": 8, "reagendado": None, "ya_pago": False},
-        {"nombre": "Ana Gómez", "dia_pago": 15, "reagendado": None, "ya_pago": False}
+        {"nombre": "Guadalupe Torres Arvea", "dia_pago": 11, "reagendado": None, "ya_pago": False},
+        {"nombre": "Beatriz Jaquelin Martinez Elias", "dia_pago": 9, "reagendado": None, "ya_pago": False},
+        {"nombre": "Uriel Jorge de Gante", "dia_pago": 12, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jose Alberto Martinez Nava", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Israel Figueroa Sedano", "dia_pago": 13, "reagendado": None, "ya_pago": False},
+        {"nombre": "Orlando Santiago Rivera", "dia_pago": 12, "reagendado": None, "ya_pago": False},
+        {"nombre": "Isabel Peña Ramirez", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Sergio Olivares Vazquez", "dia_pago": 25, "reagendado": None, "ya_pago": False},
+        {"nombre": "Dominga Lopez Martinez", "dia_pago": 1, "reagendado": None, "ya_pago": False},
+        {"nombre": "Irene Hernandez Lopez", "dia_pago": 6, "reagendado": None, "ya_pago": False},
+        {"nombre": "Reyna Juarez Santiago", "dia_pago": 6, "reagendado": None, "ya_pago": False},
+        {"nombre": "Odilon Mejia", "dia_pago": 24, "reagendado": None, "ya_pago": False},
+        {"nombre": "Rafaela Peña Rebollo", "dia_pago": 3, "reagendado": None, "ya_pago": False},
+        {"nombre": "Monica Alvarado Peña", "dia_pago": 3, "reagendado": None, "ya_pago": False},
+        {"nombre": "Nereyda Mireya Martinez", "dia_pago": 10, "reagendado": None, "ya_pago": False},
+        {"nombre": "Rafael Santos Hernandez", "dia_pago": 26, "reagendado": None, "ya_pago": False},
+        {"nombre": "Griselda Olivia Estrada Arella", "dia_pago": 26, "reagendado": None, "ya_pago": False},
+        {"nombre": "Ricardo Tiburcio Albino", "dia_pago": 1, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jose Angel Marin Dominguez", "dia_pago": 1, "reagendado": None, "ya_pago": False},
+        {"nombre": "Cecilia Carreon Solis", "dia_pago": 4, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jesus Beristain Garces", "dia_pago": 4, "reagendado": None, "ya_pago": False},
+        {"nombre": "Elizabeth Evelia Castellanos Garcia", "dia_pago": 5, "reagendado": None, "ya_pago": False},
+        {"nombre": "Esveidy Ruiz Ruiz", "dia_pago": 8, "reagendado": None, "ya_pago": False},
+        {"nombre": "Anayeli Juarez Marquez", "dia_pago": 4, "reagendado": None, "ya_pago": False},
+        {"nombre": "Juana Gabriela Alvarado Calixto", "dia_pago": 1, "reagendado": None, "ya_pago": False},
+        {"nombre": "Yadira Araiza Sandoval", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Tomasa Ayala Ramos", "dia_pago": 4, "reagendado": None, "ya_pago": False},
+        {"nombre": "Mario Moreno Nicolas", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Margarita Gabriel Morales", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Leonel Martinez Morales", "dia_pago": 3, "reagendado": None, "ya_pago": False},
+        {"nombre": "Mario Aguilar Tapia", "dia_pago": 11, "reagendado": None, "ya_pago": False},
+        {"nombre": "Luis Enrique Castro Lopez", "dia_pago": 6, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jose Bernardino Lopez Coscati", "dia_pago": 10, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jose Alberto Santos Rodriguez", "dia_pago": 10, "reagendado": None, "ya_pago": False},
+        {"nombre": "Alberto Hinostroza Hernandez", "dia_pago": 5, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jazmin Cadena Guzman", "dia_pago": 2, "reagendado": None, "ya_pago": False},
+        {"nombre": "Carmen Zendejas Flores", "dia_pago": 6, "reagendado": None, "ya_pago": False},
+        {"nombre": "Veronica Duran Gutierrez", "dia_pago": 23, "reagendado": None, "ya_pago": False},
+        {"nombre": "Maria Cecilia Agustin Cruz", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Angel Castellanos Garcia", "dia_pago": 7, "reagendado": None, "ya_pago": False}
     ]
 
 def guardar_clientes():
     with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
         json.dump(st.session_state.clientes, f, ensure_ascii=False, indent=4)
 
-# 1. CARGAR DATOS A LA MEMORIA DE STREAMLIT
+# 1. CARGAR DATOS
 if "clientes" not in st.session_state:
     st.session_state.clientes = cargar_clientes()
 
@@ -53,7 +90,7 @@ def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
         return "oculto", "Fuera de rango"
 
 # --- INTERFAZ VISUAL ---
-st.title("📅 Agenda Semáforo Permanente")
+st.title("📅 Agenda Semáforo Oficial")
 
 # SIMULADOR DE DÍA
 dia_actual = st.slider("Simular Día de Hoy del Mes:", min_value=1, max_value=31, value=datetime.now().day)
@@ -92,19 +129,19 @@ if nombre_buscar.strip():
                 with c1:
                     if st.button("✅ Ya pagó", key=f"busq_pago_{idx}"):
                         st.session_state.clientes[idx]["ya_pago"] = True
-                        guardar_clientes() # Guardar cambio de forma permanente
+                        guardar_clientes()
                         st.rerun()
                 with c2:
                     fecha_b = st.number_input("Día:", min_value=1, max_value=31, value=dia_actual, key=f"busq_num_{idx}")
                     if st.button("📅 Agendar", key=f"busq_reag_{idx}"):
                         st.session_state.clientes[idx]["reagendado"] = int(fecha_b)
                         st.session_state.clientes[idx]["ya_pago"] = False
-                        guardar_clientes() # Guardar cambio de forma permanente
+                        guardar_clientes()
                         st.rerun()
                 with c3:
                     if st.button("❌ Eliminar", key=f"busq_elim_{idx}"):
                         st.session_state.clientes.pop(idx)
-                        guardar_clientes() # Guardar cambio de forma permanente
+                        guardar_clientes()
                         st.rerun()
     else:
         st.info("💡 No hay ningún cliente con ese nombre.")
@@ -124,7 +161,7 @@ if nombre_buscar.strip():
                     "reagendado": None,
                     "ya_pago": False
                 })
-                guardar_clientes() # Guardar nuevo cliente de forma permanente
+                guardar_clientes()
                 st.success("¡Agregado!")
                 st.rerun()
 
@@ -182,7 +219,6 @@ st.write("---")
 with st.expander("💾 Respaldos (Asegurar datos en tu Teléfono)"):
     st.write("Usa estas opciones para no perder tu lista si el servidor se reinicia:")
     
-    # Botón para descargar los datos actuales como archivo JSON al celular
     datos_json = json.dumps(st.session_state.clientes, ensure_ascii=False, indent=4)
     st.download_button(
         label="📥 Descargar copia de clientes al celular",
@@ -193,7 +229,6 @@ with st.expander("💾 Respaldos (Asegurar datos en tu Teléfono)"):
     )
     
     st.write("---")
-    # Subir archivo para restaurar la lista
     archivo_subido = st.file_uploader("📤 Restaurar lista desde un respaldo:", type=["json"])
     if archivo_subido is not None:
         try:
