@@ -3,12 +3,16 @@ from datetime import datetime
 import json
 import os
 
-# CONFIGURACIÓN DE LA PÁGINA PARA CELULARES
-st.set_page_config(page_title="Agenda de Cobro Oficial", page_icon="📅", layout="centered")
+# --- CONFIGURACIÓN CORPORATIVA PARA CELULARES ---
+st.set_page_config(
+    page_title="Grupo Alfa - Control de Cobranza", 
+    page_icon="🏢", 
+    layout="centered"
+)
 
 ARCHIVO_DATOS = "clientes.json"
 
-# --- FUNCIONES PARA LEER Y GUARDAR EN EL ARCHIVO ---
+# --- MÓDULO DE PERSISTENCIA DE DATOS ---
 def cargar_clientes():
     if os.path.exists(ARCHIVO_DATOS):
         try:
@@ -16,7 +20,7 @@ def cargar_clientes():
                 return json.load(f)
         except:
             pass
-    # LISTA OFICIAL EXTRAÍDA DE TUS HOJAS DE RUTA (SIN DUPLICADOS NI BLANCOS)
+    # Base de datos oficial de la ruta
     return [
         {"nombre": "Guadalupe Torres Arvea", "dia_pago": 11, "reagendado": None, "ya_pago": False},
         {"nombre": "Beatriz Jaquelin Martinez Elias", "dia_pago": 9, "reagendado": None, "ya_pago": False},
@@ -64,11 +68,11 @@ def guardar_clientes():
     with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
         json.dump(st.session_state.clientes, f, ensure_ascii=False, indent=4)
 
-# 1. CARGAR DATOS
+# Inicialización de estado interno
 if "clientes" not in st.session_state:
     st.session_state.clientes = cargar_clientes()
 
-# 2. MOTOR DE LOGÍSICA DEL SEMÁFORO
+# --- MOTOR DE ASIGNACIÓN LOGÍSTICA (SEMÁFORO DE COBRO) ---
 def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
     if ya_pago:
         return "oculto", "Ya pagó"
@@ -77,29 +81,31 @@ def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
     dif = dia_referencia - dia_actual
     
     if 2 <= dif <= 5:
-        return "verde", f"🟢 Falta poco ({dif} días)"
+        return "verde", f"🟢 Próximo Vencimiento ({dif} días)"
     elif dif == 1:
-        return "azul", "🔵 Paga mañana"
+        return "azul", "🔵 Programado para Mañana"
     elif -5 <= dif <= 0:
         atraso = abs(dif)
-        return "amarillo", f"🟡 Día de pago / Tolerancia (Día {atraso})"
+        return "amarillo", f"🟡 Periodo de Tolerancia (Día {atraso})"
     elif -10 <= dif <= -6:
         atraso = abs(dif)
-        return "rojo", f"🔴 Vencido (Atraso de {atraso} días)"
+        return "rojo", f"🔴 Cuenta Vencida ({atraso} días de atraso)"
     else:
         return "oculto", "Fuera de rango"
 
-# --- INTERFAZ VISUAL ---
-st.title("📅 Agenda Semáforo Oficial")
+# --- ENTORNO VISUAL CORPORATIVO ---
+st.title("🏢 GRUPO ALFA")
+st.subheader("Sistema de Gestión y Control de Cobranza")
+st.markdown("---")
 
-# SIMULADOR DE DÍA
-dia_actual = st.slider("Simular Día de Hoy del Mes:", min_value=1, max_value=31, value=datetime.now().day)
+# MÓDULO DE TIEMPO
+dia_actual = st.slider("Seleccionar Día de Operación Actual:", min_value=1, max_value=31, value=datetime.now().day)
 
 # =========================================================
-# 3. SECCIÓN DE BÚSQUEDA Y REGISTRO DINÁMICO
+# SECCIÓN 1: BÚSQUEDA Y REGISTRO DE TITULARES
 # =========================================================
-st.subheader("🔍 Buscar o Registrar Cliente")
-nombre_buscar = st.text_input("Escribe el nombre del cliente:", placeholder="Empieza a escribir...")
+st.subheader("🔍 Consulta y Registro de Clientes")
+nombre_buscar = st.text_input("Buscar cliente por nombre:", placeholder="Escriba para buscar en la base de datos...")
 
 existe_exacto = False
 
@@ -108,53 +114,53 @@ if nombre_buscar.strip():
     coincidencias = [(idx, c) for idx, c in enumerate(st.session_state.clientes) if texto_limpio in c["nombre"].lower()]
     
     if coincidencias:
-        st.write(f"📂 **Coincidencias encontradas (Mostrando hasta 5):**")
+        st.write(f"📂 **Registros coincidentes encontrados:**")
         for idx, registro in coincidencias[:5]:
             if registro["nombre"].lower() == texto_limpio:
                 existe_exacto = True
                 
             color_s, texto_s = obtener_color_y_estado(dia_actual, registro["dia_pago"], registro["reagendado"], registro["ya_pago"])
             if registro["ya_pago"]:
-                texto_s = "✅ Ya pagó este mes"
+                texto_s = "✅ Ciclo Mensual Cubierto"
             elif color_s == "oculto":
-                texto_s = f"💤 Fuera de semáforo (Pago: Día {registro['dia_pago']})"
+                texto_s = f"💤 Inactivo en Semáforo (Fecha Base: Día {registro['dia_pago']})"
                 
             titulo_tarjeta = f"{texto_s} | {registro['nombre']}"
             if registro['reagendado'] is not None:
-                titulo_tarjeta += f" (Reagendado -> {registro['reagendado']})"
+                titulo_tarjeta += f" (Reagendado -> Día {registro['reagendado']})"
                 
             with st.expander(titulo_tarjeta, expanded=True):
-                st.write(f"**Configuración:** Día de pago fijo: {registro['dia_pago']}")
+                st.write(f"**Parámetros:** Día de cobro estipulado: {registro['dia_pago']}")
                 c1, c2, c3 = st.columns(3)
                 with c1:
-                    if st.button("✅ Ya pagó", key=f"busq_pago_{idx}"):
+                    if st.button("✅ Registrar Pago", key=f"busq_pago_{idx}"):
                         st.session_state.clientes[idx]["ya_pago"] = True
                         guardar_clientes()
                         st.rerun()
                 with c2:
-                    fecha_b = st.number_input("Día:", min_value=1, max_value=31, value=dia_actual, key=f"busq_num_{idx}")
-                    if st.button("📅 Agendar", key=f"busq_reag_{idx}"):
+                    fecha_b = st.number_input("Nueva Fecha:", min_value=1, max_value=31, value=dia_actual, key=f"busq_num_{idx}")
+                    if st.button("📅 Reagendar", key=f"busq_reag_{idx}"):
                         st.session_state.clientes[idx]["reagendado"] = int(fecha_b)
                         st.session_state.clientes[idx]["ya_pago"] = False
                         guardar_clientes()
                         st.rerun()
                 with c3:
-                    if st.button("❌ Eliminar", key=f"busq_elim_{idx}"):
+                    if st.button("❌ Dar de Baja", key=f"busq_elim_{idx}"):
                         st.session_state.clientes.pop(idx)
                         guardar_clientes()
                         st.rerun()
     else:
-        st.info("💡 No hay ningún cliente con ese nombre.")
+        st.info("💡 No se encontraron registros con el nombre especificado.")
 
     if not existe_exacto:
         st.write("---")
-        st.write(f"➕ **Registrar como nuevo cliente:** '{nombre_buscar.strip()}'")
+        st.write(f"➕ **Alta de Nuevo Cliente:** '{nombre_buscar.strip()}'")
         col_dia, col_btn = st.columns([2, 1])
         with col_dia:
-            nuevo_dia = st.number_input("Asignar Día de Pago Fijo (1-31):", min_value=1, max_value=31, value=1, key="nuevo_dia_pago")
+            nuevo_dia = st.number_input("Definir Día de Pago Fijo (1-31):", min_value=1, max_value=31, value=1, key="nuevo_dia_pago")
         with col_btn:
             st.write(" ")
-            if st.button("➕ Guardar", use_container_width=True):
+            if st.button("➕ Dar de Alta", use_container_width=True):
                 st.session_state.clientes.append({
                     "nombre": nombre_buscar.strip(),
                     "dia_pago": int(nuevo_dia),
@@ -162,15 +168,15 @@ if nombre_buscar.strip():
                     "ya_pago": False
                 })
                 guardar_clientes()
-                st.success("¡Agregado!")
+                st.success("¡Registro añadido exitosamente!")
                 st.rerun()
 
 st.write("---")
 
 # =========================================================
-# 4. DESPLIEGUE DEL SEMÁFORO PRINCIPAL (RUTA DEL DÍA)
+# SECCIÓN 2: PANEL DE CONTROL DE RUTA DIARIA
 # =========================================================
-st.subheader("📌 Clientes Activos en el Semáforo")
+st.subheader("📌 Clientes con Acciones Requeridas Hoy")
 
 hay_clientes_visibles = False
 
@@ -186,18 +192,18 @@ for i, registro in enumerate(st.session_state.clientes):
         etiqueta_tarjeta += f" (Reagendado para el {registro['reagendado']})"
         
     with st.expander(etiqueta_tarjeta):
-        st.write(f"**Día de cobro original:** Día {registro['dia_pago']} de cada mes.")
+        st.write(f"**Detalles:** Día de cobro regular asignado: {registro['dia_pago']}.")
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            if st.button("✅ Ya pagó", key=f"ruta_pago_{i}"):
+            if st.button("✅ Registrar Pago", key=f"ruta_pago_{i}"):
                 registro["ya_pago"] = True
                 guardar_clientes()
                 st.rerun()
                 
         with col2:
             nueva_fecha = st.number_input("Día:", min_value=1, max_value=31, value=dia_actual, key=f"ruta_num_{i}")
-            if st.button("📅 Reagendar", key=f"ruta_reag_{i}"):
+            if st.button("📅 Prórroga", key=f"ruta_reag_{i}"):
                 registro["reagendado"] = int(nueva_fecha)
                 guardar_clientes()
                 st.rerun()
@@ -209,44 +215,43 @@ for i, registro in enumerate(st.session_state.clientes):
                 st.rerun()
 
 if not hay_clientes_visibles:
-    st.info("No hay clientes programados para cobro en el día simulado de hoy.")
+    st.info("No se registran cuentas pendientes de cobro para el día de operación seleccionado.")
 
 st.write("---")
 
 # =========================================================
-# 5. HERRAMIENTAS DE RESPALDO Y REINICIO
+# SECCIÓN 3: HERRAMIENTAS DE SEGURIDAD Y RESPALDO
 # =========================================================
-with st.expander("💾 Respaldos (Asegurar datos en tu Teléfono)"):
-    st.write("Usa estas opciones para no perder tu lista si el servidor se reinicia:")
+with st.expander("💾 Seguridad de Datos y Respaldos Corporativos"):
+    st.write("Utilice estas herramientas para salvaguardar el estado de la cobranza actual:")
     
     datos_json = json.dumps(st.session_state.clientes, ensure_ascii=False, indent=4)
     st.download_button(
-        label="📥 Descargar copia de clientes al celular",
+        label="📥 Descargar respaldo de base de datos local",
         data=datos_json,
-        file_name="respaldo_clientes.json",
+        file_name="respaldo_grupo_alfa.json",
         mime="application/json",
         use_container_width=True
     )
     
     st.write("---")
-    archivo_subido = st.file_uploader("📤 Restaurar lista desde un respaldo:", type=["json"])
+    archivo_subido = st.file_uploader("📤 Cargar base de datos desde respaldo anterior:", type=["json"])
     if archivo_subido is not None:
         try:
             datos_restaurados = json.load(archivo_subido)
-            if st.button("⚠️ Confirmar Restauración"):
+            if st.button("⚠️ Confirmar Sobreescritura"):
                 st.session_state.clientes = datos_restaurados
                 guardar_clientes()
-                st.success("¡Lista restaurada con éxito!")
+                st.success("¡Base de datos restaurada correctamente!")
                 st.rerun()
         except:
-            st.error("Archivo no válido.")
+            st.error("Archivo corrupto o formato no válido.")
 
 st.write(" ")
-if st.button("🔄 Reiniciar Mes (Borra pagos y agendas temporales)"):
+if st.button("🔄 Cierre Mensual (Reiniciar Estatus de Cuentas)"):
     for registro in st.session_state.clientes:
         registro["ya_pago"] = False
         registro["reagendado"] = None
     guardar_clientes()
-    st.success("¡Todo listo para el nuevo ciclo mensual!")
+    st.success("¡Módulo reiniciado para el inicio del nuevo periodo mensual!")
     st.rerun()
- 
