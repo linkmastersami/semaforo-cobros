@@ -21,7 +21,6 @@ if not st.session_state.autenticado:
     st.subheader("Sistema de Gestión de Cobranza")
     st.write("---")
     
-    # Cuadro de texto oculto para la contraseña
     clase_acceso = st.text_input("Introduzca la clave de acceso para continuar:", type="password", placeholder="******")
     
     if st.button("Iniciar Sesión", use_container_width=True):
@@ -32,12 +31,11 @@ if not st.session_state.autenticado:
         else:
             st.error("❌ Clave de acceso incorrecta. Inténtelo de nuevo.")
             
-    # Detiene la ejecución del código para que nadie vea los datos sin loguearse
     st.stop()
 
 
 # =========================================================
-# 📂 CONTROL DE BASE DE DATOS (SOLO ACCESIBLE CON LOGUEO)
+# 📂 CONTROL DE BASE DE DATOS (CON NUEVOS REGISTROS)
 # =========================================================
 ARCHIVO_DATOS = "clientes.json"
 
@@ -48,7 +46,8 @@ def cargar_clientes():
                 return json.load(f)
         except:
             pass
-    # Base de datos oficial de la ruta
+            
+    # Base de datos oficial de la ruta (Actualizada)
     return [
         {"nombre": "Guadalupe Torres Arvea", "dia_pago": 11, "reagendado": None, "ya_pago": False},
         {"nombre": "Beatriz Jaquelin Martinez Elias", "dia_pago": 9, "reagendado": None, "ya_pago": False},
@@ -75,7 +74,7 @@ def cargar_clientes():
         {"nombre": "Esveidy Ruiz Ruiz", "dia_pago": 8, "reagendado": None, "ya_pago": False},
         {"nombre": "Anayeli Juarez Marquez", "dia_pago": 4, "reagendado": None, "ya_pago": False},
         {"nombre": "Juana Gabriela Alvarado Calixto", "dia_pago": 1, "reagendado": None, "ya_pago": False},
-        {"nombre": "Yadira Araiza Sandoval", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Yadira Araiza Sandoval (Lote 44B)", "dia_pago": 7, "reagendado": None, "ya_pago": False},
         {"nombre": "Tomasa Ayala Ramos", "dia_pago": 4, "reagendado": None, "ya_pago": False},
         {"nombre": "Mario Moreno Nicolas", "dia_pago": 7, "reagendado": None, "ya_pago": False},
         {"nombre": "Margarita Gabriel Morales", "dia_pago": 7, "reagendado": None, "ya_pago": False},
@@ -89,7 +88,36 @@ def cargar_clientes():
         {"nombre": "Carmen Zendejas Flores", "dia_pago": 6, "reagendado": None, "ya_pago": False},
         {"nombre": "Veronica Duran Gutierrez", "dia_pago": 23, "reagendado": None, "ya_pago": False},
         {"nombre": "Maria Cecilia Agustin Cruz", "dia_pago": 7, "reagendado": None, "ya_pago": False},
-        {"nombre": "Angel Castellanos Garcia", "dia_pago": 7, "reagendado": None, "ya_pago": False}
+        {"nombre": "Angel Castellanos Garcia", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        
+        # --- NUEVOS CLIENTES INTEGRADOS ---
+        {"nombre": "Adriana Alejandro Espino", "dia_pago": 2, "reagendado": None, "ya_pago": False},
+        {"nombre": "Maria Luisa Mar Santiago", "dia_pago": 3, "reagendado": None, "ya_pago": False},
+        {"nombre": "Norma Alejandra Espino", "dia_pago": 16, "reagendado": None, "ya_pago": False},
+        {"nombre": "Sabino Moises Olmos Vargas", "dia_pago": 19, "reagendado": None, "ya_pago": False},
+        {"nombre": "Magdalena Dominguez Ronces", "dia_pago": 23, "reagendado": None, "ya_pago": False},
+        {"nombre": "Ladislao Solares Montero", "dia_pago": 18, "reagendado": None, "ya_pago": False},
+        {"nombre": "Maria Noelia Espino Valdovinos", "dia_pago": 19, "reagendado": None, "ya_pago": False},
+        {"nombre": "Luis Alberto Perales Soto", "dia_pago": 19, "reagendado": None, "ya_pago": False},
+        {"nombre": "Virginia Reyna Bazar Vivar", "dia_pago": 25, "reagendado": None, "ya_pago": False},
+        {"nombre": "Francisco Rafael Chavez Manuel", "dia_pago": 27, "reagendado": None, "ya_pago": False},
+        {"nombre": "Anel Cintora Vazquez", "dia_pago": 26, "reagendado": None, "ya_pago": False},
+        {"nombre": "Alejandro Cruz Miguel", "dia_pago": 18, "reagendado": None, "ya_pago": False},
+        {"nombre": "Leticia Ortiz Hernandez", "dia_pago": 22, "reagendado": None, "ya_pago": False},
+        {"nombre": "Gustavo Casares Melo", "dia_pago": 22, "reagendado": None, "ya_pago": False},
+        {"nombre": "Miguel Angel Villegas Arias", "dia_pago": 20, "reagendado": None, "ya_pago": False},
+        {"nombre": "Alejandra Yoselin Mercado Perez", "dia_pago": 7, "reagendado": None, "ya_pago": False},
+        {"nombre": "Fernando Tonatiuh Mendez Ponce", "dia_pago": 20, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jaquelin Liliana Zagaceta Colin", "dia_pago": 17, "reagendado": None, "ya_pago": False},
+        {"nombre": "Tatiana Lucas España", "dia_pago": 22, "reagendado": None, "ya_pago": False},
+        {"nombre": "Maria Del Carmen Nicolas Escobar", "dia_pago": 15, "reagendado": None, "ya_pago": False},
+        {"nombre": "Jose Octavio Lopez Hernandez", "dia_pago": 10, "reagendado": None, "ya_pago": False},
+        {"nombre": "Antonio Ledesma Mejia", "dia_pago": 1, "reagendado": None, "ya_pago": False},
+        {"nombre": "German Carrillo Hernandez", "dia_pago": 24, "reagendado": None, "ya_pago": False},
+        {"nombre": "Eva Paz", "dia_pago": 29, "reagendado": None, "ya_pago": False},
+        {"nombre": "Benito Aguilar Aguilar", "dia_pago": 30, "reagendado": None, "ya_pago": False},
+        {"nombre": "Yadira Araiza Sandoval (Lote 6)", "dia_pago": 21, "reagendado": None, "ya_pago": False},
+        {"nombre": "Saul Echegaray Jimenez", "dia_pago": 13, "reagendado": None, "ya_pago": False}
     ]
 
 def guardar_clientes():
