@@ -10,9 +10,37 @@ st.set_page_config(
     layout="centered"
 )
 
+# =========================================================
+# 🔒 MÓDULO DE SEGURIDAD (SOLO CONTRASEÑA)
+# =========================================================
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+
+if not st.session_state.autenticado:
+    st.title("🏢 GRUPO ALFA")
+    st.subheader("Sistema de Gestión de Cobranza")
+    st.write("---")
+    
+    # Cuadro de texto oculto para la contraseña
+    clase_acceso = st.text_input("Introduzca la clave de acceso para continuar:", type="password", placeholder="******")
+    
+    if st.button("Iniciar Sesión", use_container_width=True):
+        if clase_acceso == "200218":
+            st.session_state.autenticado = True
+            st.success("Acceso autorizado.")
+            st.rerun()
+        else:
+            st.error("❌ Clave de acceso incorrecta. Inténtelo de nuevo.")
+            
+    # Detiene la ejecución del código para que nadie vea los datos sin loguearse
+    st.stop()
+
+
+# =========================================================
+# 📂 CONTROL DE BASE DE DATOS (SOLO ACCESIBLE CON LOGUEO)
+# =========================================================
 ARCHIVO_DATOS = "clientes.json"
 
-# --- MÓDULO DE PERSISTENCIA DE DATOS ---
 def cargar_clientes():
     if os.path.exists(ARCHIVO_DATOS):
         try:
@@ -68,11 +96,10 @@ def guardar_clientes():
     with open(ARCHIVO_DATOS, "w", encoding="utf-8") as f:
         json.dump(st.session_state.clientes, f, ensure_ascii=False, indent=4)
 
-# Inicialización de estado interno
 if "clientes" not in st.session_state:
     st.session_state.clientes = cargar_clientes()
 
-# --- MOTOR DE ASIGNACIÓN LOGÍSTICA (SEMÁFORO DE COBRO) ---
+# --- MOTOR DE ASIGNACIÓN LOGÍSTICA ---
 def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
     if ya_pago:
         return "oculto", "Ya pagó"
@@ -93,12 +120,11 @@ def obtener_color_y_estado(dia_actual, dia_pago, reagendado, ya_pago):
     else:
         return "oculto", "Fuera de rango"
 
-# --- ENTORNO VISUAL CORPORATIVO ---
+# --- ENTORNO VISUAL PRINCIPAL ---
 st.title("🏢 GRUPO ALFA")
 st.subheader("Sistema de Gestión y Control de Cobranza")
 st.markdown("---")
 
-# MÓDULO DE TIEMPO
 dia_actual = st.slider("Seleccionar Día de Operación Actual:", min_value=1, max_value=31, value=datetime.now().day)
 
 # =========================================================
